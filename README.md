@@ -4,6 +4,11 @@ CLI tool to test DNS resolution across multiple resolvers (TM Unifi, TIME Intern
 
 This script is also used to verify **MCMC CNAME redirection** functionality in Malaysia when ISP DNS providers configure domain filtering or block redirects.
 
+## Scripts in this Repo
+
+- **`dns_verify.py`** (Recommended): Main tool. Uses parallel thread queries, supports all record types (`A`, `AAAA`, `MX`, `TXT`, `NS`, `PTR`), auto-formats PTR reverse IPs, aligns dynamic tables, and handles `Ctrl+C` exits cleanly.
+- **`dns_verify.sh`**: Legacy shell fallback for environments without Python 3. Runs basic sequential `A`/`CNAME` checks.
+
 ## Example Output
 
 ```text
@@ -43,15 +48,6 @@ curl -sSL https://raw.githubusercontent.com/barun-labs/dns-verify/master/dns_ver
 
 - Python 3.8+
 - `dig` (installed via `bind-utils` / `bind9-utils` / `bind` package)
-
-## Features
-
-- **Record Types**: `A`, `AAAA`, `CNAME`, `MX`, `TXT`, `NS`, `PTR`.
-- **MCMC Redirection Inspection**: Audit Malaysian ISP DNS filtering and CNAME redirects (`mcmc.time.net.my` / `mcmc.unifi.my`).
-- **PTR Auto-Reverse**: Passing an IP like `1.1.1.1` under PTR mode automatically formats it to `1.1.1.1.in-addr.arpa`.
-- **Presets**: TM Unifi, TIME Internet, Cloudflare, Google, Quad9, OpenDNS, AdGuard DNS included.
-- **Parallel Checks**: Uses thread pools for fast multi-server queries.
-- **Clean Table Output**: Formatted Unicode table with query response times and status flags.
 
 ## License
 
