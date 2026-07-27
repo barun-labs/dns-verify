@@ -7,8 +7,12 @@
 # Default preset lists
 DEFAULT_DOMAINS=("pornhub.com" "vapeshop2u.com" "google.com" "tiktok.com")
 TM_SERVERS=("202.188.0.132" "202.188.18.188" "1.9.1.9" "202.188.1.5" "202.188.0.133")
-TIME_SERVERS=("210.19.6.103" "210.19.6.106" "210.19.6.109" "210.19.6.135" "210.19.6.141" "210.19.6.81" "210.19.6.82")
-PUBLIC_SERVERS=("1.1.1.1" "8.8.8.8" "9.9.9.9" "208.67.222.222")
+TIME_SERVERS=("210.19.6.81" "210.19.6.82")
+CLOUDFLARE_SERVERS=("1.1.1.1" "1.0.0.1")
+GOOGLE_SERVERS=("8.8.8.8" "8.8.4.4")
+QUAD9_SERVERS=("9.9.9.9" "149.112.112.112")
+OPENDNS_SERVERS=("208.67.222.222" "208.67.220.220")
+ADGUARD_SERVERS=("94.140.14.14" "94.140.15.15")
 
 # ANSI Colors
 RED='\033[0;31m'
@@ -47,12 +51,16 @@ fi
 
 # 2. Ask for DNS Servers
 echo -e "\n${BOLD}Step 2: Specify DNS Server(s)${NC}"
-echo "  [1] TM Unifi / Telekom Malaysia DNS (${TM_SERVERS[0]}, ${TM_SERVERS[1]}, ...)"
-echo "  [2] TIME Internet Malaysia DNS (${TIME_SERVERS[0]}, ${TIME_SERVERS[1]}, ...)"
-echo "  [3] Public DNS (Cloudflare 1.1.1.1, Google 8.8.8.8, Quad9 9.9.9.9)"
-echo "  [4] Custom DNS Server IP(s)"
-echo "  [5] All (TM + TIME + Public DNS)"
-read -p "Choice [1-5] (default 1): " s_choice
+echo "  [1] TM Unifi / Telekom Malaysia (${TM_SERVERS[*]})"
+echo "  [2] TIME Internet Malaysia (${TIME_SERVERS[*]})"
+echo "  [3] Cloudflare (${CLOUDFLARE_SERVERS[*]})"
+echo "  [4] Google (${GOOGLE_SERVERS[*]})"
+echo "  [5] Quad9 (${QUAD9_SERVERS[*]})"
+echo "  [6] OpenDNS (${OPENDNS_SERVERS[*]})"
+echo "  [7] AdGuard DNS (${ADGUARD_SERVERS[*]})"
+echo "  [8] Custom DNS Server IP(s)"
+echo "  [9] All Presets"
+read -p "Choice [1-9] (default 1): " s_choice
 
 SERVERS=()
 case "$s_choice" in
@@ -60,15 +68,27 @@ case "$s_choice" in
         SERVERS=("${TIME_SERVERS[@]}")
         ;;
     3)
-        SERVERS=("${PUBLIC_SERVERS[@]}")
+        SERVERS=("${CLOUDFLARE_SERVERS[@]}")
         ;;
     4)
+        SERVERS=("${GOOGLE_SERVERS[@]}")
+        ;;
+    5)
+        SERVERS=("${QUAD9_SERVERS[@]}")
+        ;;
+    6)
+        SERVERS=("${OPENDNS_SERVERS[@]}")
+        ;;
+    7)
+        SERVERS=("${ADGUARD_SERVERS[@]}")
+        ;;
+    8)
         echo -e "\nEnter DNS Server IP(s) (space separated):"
         read -p "> " custom_dns
         SERVERS=($custom_dns)
         ;;
-    5)
-        SERVERS=("${TM_SERVERS[@]}" "${TIME_SERVERS[@]}" "${PUBLIC_SERVERS[@]}")
+    9)
+        SERVERS=("${TM_SERVERS[@]}" "${TIME_SERVERS[@]}" "${CLOUDFLARE_SERVERS[@]}" "${GOOGLE_SERVERS[@]}" "${QUAD9_SERVERS[@]}" "${OPENDNS_SERVERS[@]}" "${ADGUARD_SERVERS[@]}")
         ;;
     *)
         SERVERS=("${TM_SERVERS[@]}")
