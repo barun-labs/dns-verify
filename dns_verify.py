@@ -170,7 +170,7 @@ def run_dns_verification(domains: List[str], servers: List[str], qtype: str = "A
     """Run DNS queries in parallel for all domains and servers."""
     results = []
 
-    print(f"\n{COLOR_CYAN}⚡ Running DNS queries ({len(domains)} domains × {len(servers)} servers = {len(domains)*len(servers)} checks)...{COLOR_RESET}\n")
+    print(f"\n{COLOR_CYAN}Running DNS queries ({len(domains)} domains × {len(servers)} servers = {len(domains)*len(servers)} checks)...{COLOR_RESET}\n")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
         future_to_query = {

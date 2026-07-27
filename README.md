@@ -12,7 +12,7 @@ This script is also used to verify **MCMC CNAME redirection** functionality in M
 ## Example Output
 
 ```text
-⚡ Running DNS queries (2 domains × 2 servers = 4 checks)...
+Running DNS queries (2 domains × 2 servers = 4 checks)...
 
 ┌────────────────┬──────────────┬───────┬────────────────┬────────────────────────────────┐
 │ DOMAIN         │ SERVER       │ QTIME │ REDIRECT-CNAME │ RESOLVED-IP                    │
