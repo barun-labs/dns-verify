@@ -35,11 +35,6 @@ PRESET_SERVERS = {
     "2": {
         "name": "TIME Internet Malaysia",
         "servers": [
-            "210.19.6.103",
-            "210.19.6.106",
-            "210.19.6.109",
-            "210.19.6.135",
-            "210.19.6.141",
             "210.19.6.81",
             "210.19.6.82"
         ]
@@ -51,6 +46,18 @@ PRESET_SERVERS = {
     "4": {
         "name": "Google (8.8.8.8, 8.8.4.4)",
         "servers": ["8.8.8.8", "8.8.4.4"]
+    },
+    "5": {
+        "name": "Quad9 (9.9.9.9, 149.112.112.112)",
+        "servers": ["9.9.9.9", "149.112.112.112"]
+    },
+    "6": {
+        "name": "OpenDNS (208.67.222.222, 208.67.220.220)",
+        "servers": ["208.67.222.222", "208.67.220.220"]
+    },
+    "7": {
+        "name": "AdGuard DNS (94.140.14.14, 94.140.15.15)",
+        "servers": ["94.140.14.14", "94.140.15.15"]
     }
 }
 
@@ -340,21 +347,21 @@ def interactive_mode():
     print(f"\n{COLOR_BOLD}Step 2: Choose DNS Server(s){COLOR_RESET}")
     for key, data in PRESET_SERVERS.items():
         print(f"  [{key}] {data['name']} ({', '.join(data['servers'][:3])}{'...' if len(data['servers']) > 3 else ''})")
-    print("  [5] Custom DNS Server IP(s) (space/comma separated)")
-    print("  [6] Combine Presets + Custom DNS Servers")
+    print("  [8] Custom DNS Server IP(s) (space/comma separated)")
+    print("  [9] Combine Presets + Custom DNS Servers")
 
-    srv_choice = input("\nSelect DNS Server Option [1-6] (default: 1): ").strip()
+    srv_choice = input("\nSelect DNS Server Option [1-9] (default: 1): ").strip()
     if not srv_choice:
         srv_choice = "1"
 
     servers = []
     if srv_choice in PRESET_SERVERS:
         servers = PRESET_SERVERS[srv_choice]["servers"]
-    elif srv_choice == "5":
+    elif srv_choice == "8":
         custom_input = input("\nEnter DNS Server IP(s): ").strip()
         servers = [s.strip() for s in re.split(r'[\s,]+', custom_input) if s.strip()]
-    elif srv_choice == "6":
-        print("Select base preset [1-4]: ", end="")
+    elif srv_choice == "9":
+        print("Select base preset [1-7]: ", end="")
         base_c = input().strip()
         if base_c in PRESET_SERVERS:
             servers.extend(PRESET_SERVERS[base_c]["servers"])
