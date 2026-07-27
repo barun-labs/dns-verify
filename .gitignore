@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+dns_results.txt
+.DS_Store
