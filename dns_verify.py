@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Interactive DNS Verification & Multi-Server Query Tool
-Supports multi-domain / multi-page input, preset DNS servers (TM Unifi, TIME Internet, Cloudflare, Google, etc.),
-custom DNS servers, parallel execution, and colorized tabular output.
-"""
+"""DNS verification & multi-server propagation query tool."""
 
 import sys
 import os
