@@ -8,6 +8,9 @@ import shutil
 import subprocess
 import concurrent.futures
 import argparse
+import json
+import csv
+import statistics
 from typing import List, Dict, Any, Tuple
 
 # ANSI Colors for terminal output
@@ -36,7 +39,13 @@ PRESET_SERVERS = {
         "name": "TIME Internet Malaysia",
         "servers": [
             "210.19.6.81",
-            "210.19.6.82"
+            "210.19.6.82",
+            "210.19.6.103",
+            "210.19.6.106",
+            "210.19.6.109",
+            "210.19.6.135",
+            "210.19.6.138",
+            "210.19.6.141"
         ]
     },
     "3": {
@@ -135,13 +144,19 @@ def parse_dig_output(domain: str, server: str, output: str, return_code: int, qt
         "status": status
     }
 
-def query_single_dns(domain: str, server: str, qtype: str = "A", timeout: int = 2) -> Dict[str, Any]:
+def query_single_dns(domain: str, server: str, qtype: str = "A", timeout: int = 2, subnet: str = None, use_doh: bool = False, use_dot: bool = False) -> Dict[str, Any]:
     """Execute dig command for a domain against a specific DNS server."""
     target = domain
     if qtype.upper() == "PTR" and re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', domain):
         target = f"{'.'.join(reversed(domain.split('.')))}.in-addr.arpa"
 
     cmd = ["dig", "+tries=1", f"+time={timeout}", f"@{server}", target, qtype]
+    if subnet:
+        cmd.append(f"+subnet={subnet}")
+    if use_doh:
+        cmd.append("+https")
+    if use_dot:
+        cmd.append("+tls")
     try:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout+2)
         return parse_dig_output(domain, server, res.stdout, res.returncode, qtype)
@@ -166,17 +181,36 @@ def query_single_dns(domain: str, server: str, qtype: str = "A", timeout: int = 
             "status": "ERROR"
         }
 
-def run_dns_verification(domains: List[str], servers: List[str], qtype: str = "A") -> List[Dict[str, Any]]:
+def run_benchmark_queries(domain: str, server: str, qtype: str, timeout: int, subnet: str, use_doh: bool, use_dot: bool, runs: int) -> Dict[str, Any]:
+    qtimes = []
+    last_res = None
+    for _ in range(runs):
+        res = query_single_dns(domain, server, qtype, timeout, subnet, use_doh, use_dot)
+        last_res = res
+        if res["qtime"] not in ["TIMEOUT", "ERR", "-"]:
+            qtimes.append(int(res["qtime"].replace("ms", "")))
+    if last_res and qtimes:
+        avg = sum(qtimes) / len(qtimes)
+        last_res["qtime"] = f"{min(qtimes)}/{int(avg)}/{max(qtimes)}ms"
+    return last_res
+
+def run_dns_verification(domains: List[str], servers: List[str], qtype: str = "A", subnet: str = None, use_doh: bool = False, use_dot: bool = False, benchmark: int = 0) -> List[Dict[str, Any]]:
     """Run DNS queries in parallel for all domains and servers."""
     results = []
 
     print(f"\n{COLOR_CYAN}Running DNS queries ({len(domains)} domains × {len(servers)} servers = {len(domains)*len(servers)} checks)...{COLOR_RESET}\n")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_query = {
-            executor.submit(query_single_dns, d, s, qtype): (d, s)
-            for d in domains for s in servers
-        }
+        if benchmark > 0:
+            future_to_query = {
+                executor.submit(run_benchmark_queries, d, s, qtype, 2, subnet, use_doh, use_dot, benchmark): (d, s)
+                for d in domains for s in servers
+            }
+        else:
+            future_to_query = {
+                executor.submit(query_single_dns, d, s, qtype, 2, subnet, use_doh, use_dot): (d, s)
+                for d in domains for s in servers
+            }
         for future in concurrent.futures.as_completed(future_to_query):
             try:
                 res = future.result()
@@ -212,7 +246,10 @@ def print_table(results: List[Dict[str, Any]], domains: List[str], use_colors: b
         "TXT": "TXT-RECORDS",
         "NS": "NAME-SERVERS",
         "PTR": "PTR-DOMAINS",
-        "CNAME": "CNAME-TARGETS"
+        "CNAME": "CNAME-TARGETS",
+        "SOA": "SOA-RECORDS",
+        "SRV": "SRV-RECORDS",
+        "CAA": "CAA-RECORDS"
     }
     rec_header = header_map.get(qtype.upper(), f"{qtype.upper()}-RECORDS")
 
@@ -382,13 +419,16 @@ def interactive_mode():
         "4": ("MX", "Mail server records"),
         "5": ("TXT", "Text records (SPF, DKIM, verification)"),
         "6": ("NS", "Name server records"),
-        "7": ("PTR", "Pointer record / Reverse DNS (IP → Domain)")
+        "7": ("PTR", "Pointer record / Reverse DNS (IP → Domain)"),
+        "8": ("SOA", "Start of Authority"),
+        "9": ("SRV", "Service record"),
+        "10": ("CAA", "Certificate Authority Authorization")
     }
     for key, (rtype, desc) in record_types.items():
         rec_tag = f" {COLOR_GREEN}(Recommended){COLOR_RESET}" if key == "1" else ""
         print(f"  [{key}] {rtype:<6} - {desc}{rec_tag}")
 
-    q_choice = input("\nSelect Record Type [1-7] (default: 1): ").strip()
+    q_choice = input("\nSelect Record Type [1-10] (default: 1): ").strip()
     qtype = record_types.get(q_choice, record_types["1"])[0] if q_choice in record_types else "A"
 
     # Step 4: Optional Propagation Analysis
@@ -434,6 +474,12 @@ def main():
     parser.add_argument("--time", action="store_true", help="Use TIME Internet DNS servers")
     parser.add_argument("--public", action="store_true", help="Use Public DNS servers (1.1.1.1, 8.8.8.8, 9.9.9.9)")
     parser.add_argument("-p", "--prop", "--propagation", action="store_true", help="Run DNS Propagation & Mismatch Analysis")
+    parser.add_argument("--subnet", help="EDNS Client Subnet to pass (e.g. 1.2.3.0/24)")
+    parser.add_argument("--doh", action="store_true", help="Use DNS over HTTPS (requires newer dig)")
+    parser.add_argument("--dot", action="store_true", help="Use DNS over TLS (requires newer dig)")
+    parser.add_argument("--benchmark", type=int, default=0, metavar="N", help="Run benchmark with N queries per server")
+    parser.add_argument("--json", help="Export results to JSON file")
+    parser.add_argument("--csv", help="Export results to CSV file")
 
     args = parser.parse_args()
     cli_domains = (args.targets or []) + (args.domains or [])
@@ -453,10 +499,23 @@ def main():
             servers = PRESET_SERVERS["1"]["servers"]
         servers = list(dict.fromkeys(servers))
 
-        results = run_dns_verification(domains, servers, args.type)
+        results = run_dns_verification(domains, servers, args.type, args.subnet, args.doh, args.dot, args.benchmark)
         print_table(results, domains, qtype=args.type)
         if args.prop:
             check_propagation_diff(results, domains)
+            
+        if args.json:
+            with open(args.json, 'w') as f:
+                json.dump(results, f, indent=2)
+            print(f"{COLOR_GREEN}✓ JSON output saved to {args.json}{COLOR_RESET}")
+            
+        if args.csv:
+            with open(args.csv, 'w', newline='') as f:
+                if results:
+                    writer = csv.DictWriter(f, fieldnames=results[0].keys())
+                    writer.writeheader()
+                    writer.writerows(results)
+            print(f"{COLOR_GREEN}✓ CSV output saved to {args.csv}{COLOR_RESET}")
     else:
         interactive_mode()
 
