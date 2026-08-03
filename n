@@ -1,0 +1,20 @@
+[
+  {
+    "domain": "youtube.com",
+    "server": "1.1.1.1",
+    "qtime": "13ms",
+    "cname": ";;",
+    "ip": "[CNAME ONLY]",
+    "raw_ips": [],
+    "status": "NOERROR"
+  },
+  {
+    "domain": "youtube.com",
+    "server": "1.0.0.1",
+    "qtime": "11ms",
+    "cname": ";;",
+    "ip": "[CNAME ONLY]",
+    "raw_ips": [],
+    "status": "NOERROR"
+  }
+]
